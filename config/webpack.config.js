@@ -538,7 +538,11 @@ module.exports = function(webpackEnv) {
       isEnvProduction &&
         shouldInlineRuntimeChunk &&
         new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime-.+[.]js/]),
-      // 和index.html上的功能标签关联
+      // Makes some environment variables available in index.html.
+      // The public URL is available as %PUBLIC_URL% in index.html, e.g.:
+      // <link rel="icon" href="%PUBLIC_URL%/favicon.ico">
+      // It will be an empty string unless you specify "homepage"
+      // in `package.json`, in which case it will be the pathname of that URL.
       new InterpolateHtmlPlugin(HtmlWebpackPlugin, env.raw),
       // This gives some necessary context to module not found errors, such as
       // the requesting resource.
@@ -592,6 +596,30 @@ module.exports = function(webpackEnv) {
           };
         },
       }),
+      // Moment.js is an extremely popular library that bundles large locale files
+      // by default due to how webpack interprets its code. This is a practical
+      // solution that requires the user to opt into importing specific locales.
+      // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
+      // You can remove this if you don't use Moment.js:
+      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+      // Generate a service worker script that will precache, and keep up to date,
+      // the HTML & assets that are part of the webpack build.
+      isEnvProduction &&
+        new WorkboxWebpackPlugin.GenerateSW({
+          clientsClaim: true,
+          exclude: [/\.map$/, /asset-manifest\.json$/],
+          importWorkboxFrom: 'cdn',
+          navigateFallback: paths.publicUrlOrPath + 'index.html',
+          navigateFallbackBlacklist: [
+            // Exclude URLs starting with /_, as they're likely an API call
+            new RegExp('^/_'),
+            // Exclude any URLs whose last part seems to be a file extension
+            // as they're likely a resource and not a SPA route.
+            // URLs containing a "?" character won't be blacklisted as they're likely
+            // a route with query params (e.g. auth callbacks).
+            new RegExp('/[^/?]+\\.[^/]+$'),
+          ],
+        }),
       // TypeScript type checking
       useTypeScript &&
         new ForkTsCheckerWebpackPlugin({

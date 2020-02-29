@@ -1,12 +1,14 @@
 'use strict';
 
-// Do this as the first thing so that any code reading it knows the right env.
+// 官方脚手架使用node来直接解析这个js脚本
+// 将 BABEL_ENV NODE_ENV 这两个变量直接挂载到node这个全局环境当中
+// process是一个全局进程(node主进程)
 process.env.BABEL_ENV = 'development';
 process.env.NODE_ENV = 'development';
 
-// Makes the script crash on unhandled rejections instead of silently
-// ignoring them. In the future, promise rejections that are not handled will
-// terminate the Node.js process with a non-zero exit code.
+
+// process进程提供了一个 unhandledRejection 事件还有其他事件，例如 exit
+// 我们注册的uncaughtException事件会对异常做出处理，这样服务器不会受到影响得以继续运行。我们会在服务器端记录错误日志。
 process.on('unhandledRejection', err => {
   throw err;
 });
@@ -28,6 +30,7 @@ const {
   prepareUrls,
 } = require('react-dev-utils/WebpackDevServerUtils');
 const openBrowser = require('react-dev-utils/openBrowser');
+// paths 文件导出了大量的config文件下所有配置文件
 const paths = require('../config/paths');
 const configFactory = require('../config/webpack.config');
 const createDevServerConfig = require('../config/webpackDevServer.config');
@@ -94,11 +97,13 @@ checkBrowsers(paths.appPath, isInteractive)
         devServer.sockWrite(devServer.sockets, 'errors', errors),
     };
     // Create a webpack compiler that is configured with custom messages.
+    // 创建一个webpack编译器实例
     const compiler = createCompiler({
       appName,
       config,
       devSocket,
       urls,
+      // 来自根目录的yarn.loack文件
       useYarn,
       useTypeScript,
       tscCompileOnError,
@@ -116,8 +121,10 @@ checkBrowsers(paths.appPath, isInteractive)
       proxyConfig,
       urls.lanUrlForConfig
     );
+    // 将 webpack编译器实例和webpack服务传入到 WebpackDevServer ,
     const devServer = new WebpackDevServer(compiler, serverConfig);
     // Launch WebpackDevServer.
+    // 启动webpackdev服务
     devServer.listen(port, HOST, err => {
       if (err) {
         return console.log(err);
@@ -139,6 +146,7 @@ checkBrowsers(paths.appPath, isInteractive)
       }
 
       console.log(chalk.cyan('Starting the development server...\n'));
+      // openBrowser 会打开一个浏览器，如 openBrowser('http://localhost:3000')
       openBrowser(urls.localUrlForBrowser);
     });
 
