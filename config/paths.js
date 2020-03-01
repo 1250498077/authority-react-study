@@ -4,8 +4,13 @@ const path = require('path');
 const fs = require('fs');
 const getPublicUrlOrPath = require('react-dev-utils/getPublicUrlOrPath');
 
-// Make sure any symlinks in the project folder are resolved:
-// https://github.com/facebook/create-react-app/issues/637
+// process.cwd()返回当前node命令执行时所在的文件夹目录；
+// __dirname是指被执行js文件所在的文件夹目录
+// 这两个都是文件夹的地址
+// cwd() 是当前执行node命令时候的文件夹地址 ,比如在d:/aa/b目录下执行 npm run build 那么cwd就是d:/aa/b,
+// 而执行的文件是在d:/aa/scripts/webpack.config.js
+// 那么__dirname 是被执行的js 文件的地址，d:/aa/scripts
+// 所以我们执行node命令是在项目根目录，process.cwd()返回的是项目根目录
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 
