@@ -1,6 +1,7 @@
 'use strict';
-
+// 这个文件是帮助我们初始化环境变量的文件
 const fs = require('fs');
+// path是定义了各种文件的路径的文件
 const path = require('path');
 const paths = require('./paths');
 

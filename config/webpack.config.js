@@ -1,5 +1,5 @@
 'use strict';
-
+// 这个文件才是核心的配置文件
 const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
@@ -66,10 +66,13 @@ module.exports = function(webpackEnv) {
   const env = getClientEnvironment(paths.publicUrlOrPath.slice(0, -1));
 
   // common function to get style loaders
+  // 这里和我们平时配置loader差不多
   const getStyleLoaders = (cssOptions, preProcessor) => {
     const loaders = [
+      // 如果是开发环境，就直接使用 style-loader
       isEnvDevelopment && require.resolve('style-loader'),
       isEnvProduction && {
+        // 如果是生产环境就直接对css进行抽离
         loader: MiniCssExtractPlugin.loader,
         // css is located in `static/css`, use '../../' to locate index.html folder
         // in production `paths.publicUrlOrPath` can be a relative path
@@ -176,7 +179,7 @@ module.exports = function(webpackEnv) {
       // It requires a trailing slash, or the file assets will get an incorrect path.
       // We inferred the "public path" (such as / or /my-project) from homepage.
       publicPath: paths.publicUrlOrPath,
-      // Point sourcemap entries to original disk location (format as URL on Windows)
+      // 帮助解决sorcemap定位不准的问题
       devtoolModuleFilenameTemplate: isEnvProduction
         ? info =>
             path
@@ -191,10 +194,12 @@ module.exports = function(webpackEnv) {
       // module chunks which are built will work in web workers as well.
       globalObject: 'this',
     },
+    // 这里是配置压缩的
     optimization: {
+      // 如果是线上环境就压缩，开发环境就不压缩
       minimize: isEnvProduction,
       minimizer: [
-        // This is only used in production mode
+        // TerserPlugin是一个压缩js的插件，下面都是一些压缩js的配置
         new TerserPlugin({
           terserOptions: {
             parse: {
@@ -233,6 +238,7 @@ module.exports = function(webpackEnv) {
               ascii_only: true,
             },
           },
+          // 压缩后的代码是否要使用 sourcemap
           sourceMap: shouldUseSourceMap,
         }),
         // This is only used in production mode
@@ -258,6 +264,7 @@ module.exports = function(webpackEnv) {
       // Automatically split vendor and commons
       // https://twitter.com/wSokra/status/969633336732905474
       // https://medium.com/webpack/webpack-4-code-splitting-chunk-graph-and-the-splitchunks-optimization-be739a861366
+      // splitChunks 的意思是会把node_mondules里面的东西单独打包
       splitChunks: {
         chunks: 'all',
         name: false,
@@ -265,6 +272,7 @@ module.exports = function(webpackEnv) {
       // Keep the runtime chunk separated to enable long term caching
       // https://twitter.com/wSokra/status/969679223278505985
       // https://github.com/facebook/create-react-app/issues/5358
+      // 单独将 webpack 的 runtimeChunk 文件单独打包
       runtimeChunk: {
         name: entrypoint => `runtime-${entrypoint.name}`,
       },
@@ -274,6 +282,9 @@ module.exports = function(webpackEnv) {
       // We placed these paths second because we want `node_modules` to "win"
       // if there are any conflicts. This matches Node resolution mechanism.
       // https://github.com/facebook/create-react-app/issues/253
+      // 如果我配置 node_modules 是一个数组，当我们引入一个模块的时候，他会到
+      // node_modules 模块里面去找，也可以配置其它文件夹，配置了哪些文件夹，就回到
+      // 哪些文件夹下面去查找
       modules: ['node_modules', paths.appNodeModules].concat(
         modules.additionalModulePaths || []
       ),
@@ -283,9 +294,11 @@ module.exports = function(webpackEnv) {
       // https://github.com/facebook/create-react-app/issues/290
       // `web` extension prefixes have been added for better support
       // for React Native Web.
+      // 这个配置可以使我们在import其它文件和模块的时候不需要写后缀名 
       extensions: paths.moduleFileExtensions
         .map(ext => `.${ext}`)
         .filter(ext => useTypeScript || !ext.includes('ts')),
+      // 别名
       alias: {
         // Support React Native Web
         // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
@@ -297,6 +310,11 @@ module.exports = function(webpackEnv) {
         }),
         ...(modules.webpackAliases || {}),
       },
+      // 我们在 resolve 里面可以配置 plugins
+      // 我们知道我们可以在大的配置项里面配置 plugins
+      // 但是实际上我们知道还可以在 resolve 还可以配置 plugins
+      // 那下面这个 plugins 什么时候生效呢
+      // 当我们引入其他“模块”的时候这里的 plugins 才会执行，他不是正对我们自己写的代码的
       plugins: [
         // Adds support for installing with Plug'n'Play, leading to faster installs and adding
         // guards against forgotten dependencies and such.
@@ -309,6 +327,8 @@ module.exports = function(webpackEnv) {
         new ModuleScopePlugin(paths.appSrc, [paths.appPackageJson]),
       ],
     },
+    // resolveLoader 和 resolve 差异不大，这里的插件只有我引入“loader”的时候才会执行
+    // 上面是只有我引入模块的时候才会执行, 所以上面是一个全级，这里只有引入loader才会生效
     resolveLoader: {
       plugins: [
         // Also related to Plug'n'Play, but this time it tells webpack to load its loaders
@@ -317,15 +337,18 @@ module.exports = function(webpackEnv) {
       ],
     },
     module: {
+      // strictExportPresence 指明只有 export 的东西才能被打包
       strictExportPresence: true,
       rules: [
         // Disable require.ensure as it's not a standard language feature.
+        // 在webpack老版本允许使用require.ensure导入模块，这个配置是禁止使用这种老旧的方式
         { parser: { requireEnsure: false } },
 
         // First, run the linter.
         // It's important to do this before Babel processes the JS.
         {
           test: /\.(js|mjs|jsx|ts|tsx)$/,
+          // enforce: 'pre' 这个配置将我们进行loader编译前的代码进行 eslint 检测
           enforce: 'pre',
           use: [
             {
@@ -336,15 +359,19 @@ module.exports = function(webpackEnv) {
                 resolvePluginsRelativeTo: __dirname,
                 
               },
+              // 指定 eslint 语法检查的loader
               loader: require.resolve('eslint-loader'),
             },
           ],
+          // 指定要编译的文件的路径
           include: paths.appSrc,
         },
         {
           // "oneOf" will traverse all following loaders until one will
           // match the requirements. When no loader matches it will fall
           // back to the "file" loader at the end of the loader list.
+          // oneOf 的意思是当我们打包一个文件的时候，会去找一个loader。直到找到一个
+          // 匹配的为止
           oneOf: [
             // "url" loader works like "file" loader except that it embeds assets
             // smaller than specified limit in bytes as data URLs to avoid requests.
@@ -361,13 +388,14 @@ module.exports = function(webpackEnv) {
             // The preset includes JSX, Flow, TypeScript, and some ESnext features.
             {
               test: /\.(js|mjs|jsx|ts|tsx)$/,
+              // 指定匹配的文件是src文件
               include: paths.appSrc,
               loader: require.resolve('babel-loader'),
               options: {
                 customize: require.resolve(
                   'babel-preset-react-app/webpack-overrides'
                 ),
-                
+                // 这些插件有什么用最好自己去查
                 plugins: [
                   [
                     require.resolve('babel-plugin-named-asset-import'),
@@ -394,8 +422,11 @@ module.exports = function(webpackEnv) {
             // Unlike the application JS, we only compile the standard ES features.
             {
               test: /\.(js|mjs)$/,
+              // 如果我们引用的文件不是src文件夹下的话就会走下面这个loader
+              // 但是除了babelruntime这个文件夹下
               exclude: /@babel(?:\/|\\{1,2})runtime/,
               loader: require.resolve('babel-loader'),
+              // 下面是一些打包的配置，自己查
               options: {
                 babelrc: false,
                 configFile: false,
@@ -425,6 +456,7 @@ module.exports = function(webpackEnv) {
             // of CSS.
             // By default we support CSS Modules with the extension .module.css
             {
+              // 当我们发现是css文件的时候
               test: cssRegex,
               exclude: cssModuleRegex,
               use: getStyleLoaders({
@@ -452,6 +484,7 @@ module.exports = function(webpackEnv) {
             // Opt-in support for SASS (using .scss or .sass extensions).
             // By default we support SASS Modules with the
             // extensions .module.scss or .module.sass
+            // 当文件是一个sass文件但后缀名不在正则表达式范围内
             {
               test: sassRegex,
               exclude: sassModuleRegex,
@@ -471,6 +504,7 @@ module.exports = function(webpackEnv) {
             // Adds support for CSS Modules, but using SASS
             // using the extension .module.scss or .module.sass
             {
+              // 总之当遇到sass文件这里有他的打包配置
               test: sassModuleRegex,
               use: getStyleLoaders(
                 {
@@ -488,7 +522,9 @@ module.exports = function(webpackEnv) {
             // In production, they would get copied to the `build` folder.
             // This loader doesn't use a "test" so it will catch all modules
             // that fall through the other loaders.
+            // 当引入的这些文件
             {
+              // 当上面都匹配不到我们会直接使用 file-loader 直接打包到文件里面去
               loader: require.resolve('file-loader'),
               // Exclude `js` files to keep "css" loader working as it injects
               // its runtime that would otherwise be processed through "file" loader.
@@ -507,6 +543,7 @@ module.exports = function(webpackEnv) {
     },
     plugins: [
       // Generates an `index.html` file with the <script> injected.
+      // 自己查阅插件
       new HtmlWebpackPlugin(
         Object.assign(
           {},
@@ -535,6 +572,7 @@ module.exports = function(webpackEnv) {
       // Inlines the webpack runtime script. This script is too small to warrant
       // a network request.
       // https://github.com/facebook/create-react-app/issues/5358
+      // 判断是否将 runtime 的代码通过行内的形式嵌入到html里面
       isEnvProduction &&
         shouldInlineRuntimeChunk &&
         new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime-.+[.]js/]),
@@ -554,10 +592,12 @@ module.exports = function(webpackEnv) {
       // Otherwise React will be compiled in the very slow development mode.
       new webpack.DefinePlugin(env.stringified),
       // This is necessary to emit hot updates (currently CSS only):
+      // 如果是开发环境我们要热模块更新
       isEnvDevelopment && new webpack.HotModuleReplacementPlugin(),
       // Watcher doesn't work well if you mistype casing in a path so we use
       // a plugin that prints an error when you attempt to do this.
       // See https://github.com/facebook/create-react-app/issues/240
+      // 当我们引入模块写错大小写的时候也能进行正确的引用
       isEnvDevelopment && new CaseSensitivePathsPlugin(),
       // If you require a missing module and then `npm install` it, you still have
       // to restart the development server for webpack to discover it. This plugin
@@ -566,6 +606,7 @@ module.exports = function(webpackEnv) {
       isEnvDevelopment &&
         new WatchMissingNodeModulesPlugin(paths.appNodeModules),
       isEnvProduction &&
+      // 如果是css环境我们会对代码进行抽离
         new MiniCssExtractPlugin({
           // Options similar to the same options in webpackOptions.output
           // both options are optional
@@ -601,6 +642,7 @@ module.exports = function(webpackEnv) {
       // solution that requires the user to opt into importing specific locales.
       // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
       // You can remove this if you don't use Moment.js:
+      // 打包的时候要忽略的文件
       new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
       // Generate a service worker script that will precache, and keep up to date,
       // the HTML & assets that are part of the webpack build.
@@ -620,7 +662,7 @@ module.exports = function(webpackEnv) {
             new RegExp('/[^/?]+\\.[^/]+$'),
           ],
         }),
-      // TypeScript type checking
+      //  处理typescript的插件都放在这里
       useTypeScript &&
         new ForkTsCheckerWebpackPlugin({
           typescript: resolve.sync('typescript', {
@@ -650,6 +692,7 @@ module.exports = function(webpackEnv) {
     ].filter(Boolean),
     // Some libraries import Node modules but don't use them in the browser.
     // Tell webpack to provide empty mocks for them so importing them works.
+    // 有时候我们打包的代码需要泡在ndoe环境下，所以这里也有node的配置
     node: {
       module: 'empty',
       dgram: 'empty',
@@ -662,6 +705,7 @@ module.exports = function(webpackEnv) {
     },
     // Turn off performance processing because we utilize
     // our own hints via the FileSizeReporter
+    // 去除一些性能上的提示
     performance: false,
   };
 };

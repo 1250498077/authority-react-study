@@ -3,6 +3,7 @@
 // 官方脚手架使用node来直接解析这个js脚本
 // 将 BABEL_ENV NODE_ENV 这两个变量直接挂载到node这个全局环境当中
 // process是一个全局进程(node主进程)
+// 定义全局变量
 process.env.BABEL_ENV = 'development';
 process.env.NODE_ENV = 'development';
 
@@ -32,7 +33,9 @@ const {
 const openBrowser = require('react-dev-utils/openBrowser');
 // paths 文件导出了大量的config文件下所有配置文件
 const paths = require('../config/paths');
+// 引入主配置文件
 const configFactory = require('../config/webpack.config');
+// 引入webpackdevserver配置文件
 const createDevServerConfig = require('../config/webpackDevServer.config');
 
 const useYarn = fs.existsSync(paths.yarnLockFile);
@@ -130,7 +133,7 @@ checkBrowsers(paths.appPath, isInteractive)
       paths.appPublic,
       paths.publicUrlOrPath
     );
-    // createDevServerConfig 是自定义方法，返回 webpack 配置信息
+    // createDevServerConfig 返回的就是webpackdevserveer对应的配置内容
     const serverConfig = createDevServerConfig(
       proxyConfig,
       urls.lanUrlForConfig
