@@ -21,7 +21,7 @@ const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const safePostCssParser = require('postcss-safe-parser');
 // 用于缓存 dll 文件
 const ManifestPlugin = require('webpack-manifest-plugin');
-// 
+// 该插件应该与html-webpack-plugin一起使用,<% if ('%NODE_ENV%' === 'development') { %>do something<% } %>
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
 // 有关pwa的一些知识
 const WorkboxWebpackPlugin = require('workbox-webpack-plugin');
