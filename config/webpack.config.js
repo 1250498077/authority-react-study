@@ -4,19 +4,32 @@ const fs = require('fs');
 const path = require('path');
 const webpack = require('webpack');
 const resolve = require('resolve');
+// 帮助您正确解决程序所需的依赖关系
 const PnpWebpackPlugin = require('pnp-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+// 区分大小写的路径webpack插件
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
+// This is a webpack plugin that inline your chunks that is written as link or script using HtmlWebpackPlugin.
 const InlineChunkHtmlPlugin = require('react-dev-utils/InlineChunkHtmlPlugin');
 const TerserPlugin = require('terser-webpack-plugin');
+// 这个是将index.html文件中的<style></style>提取到单独文件中
+// 还有一个html-inline-css-webpack-plugin这个插件是将文件转成<style></style>
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+// 压缩单独的css文件
 const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
+// 它将发现并修复语法错误，能够解析任何输入。
 const safePostCssParser = require('postcss-safe-parser');
+// 用于缓存 dll 文件
 const ManifestPlugin = require('webpack-manifest-plugin');
+// 
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
+// 有关pwa的一些知识
 const WorkboxWebpackPlugin = require('workbox-webpack-plugin');
+// 该webpack插件可确保npm install <library>强制进行项目重建。
 const WatchMissingNodeModulesPlugin = require('react-dev-utils/WatchMissingNodeModulesPlugin');
+// 这个webpack插件可确保从应用程序源目录的相对导入不会到达外部。
 const ModuleScopePlugin = require('react-dev-utils/ModuleScopePlugin');
+// 为CSS模块创建一个类名，该类名使用文件名或文件夹名（如果命名）
 const getCSSModuleLocalIdent = require('react-dev-utils/getCSSModuleLocalIdent');
 const paths = require('./paths');
 const modules = require('./modules');
@@ -572,7 +585,7 @@ module.exports = function(webpackEnv) {
       // Inlines the webpack runtime script. This script is too small to warrant
       // a network request.
       // https://github.com/facebook/create-react-app/issues/5358
-      // 判断是否将 runtime 的代码通过行内的形式嵌入到html里面
+      // 判断是否将 runtime(就是webpack的代码，不是我们自己的业务代码) 的代码通过行内的形式嵌入到html里面
       isEnvProduction &&
         shouldInlineRuntimeChunk &&
         new InlineChunkHtmlPlugin(HtmlWebpackPlugin, [/runtime-.+[.]js/]),
@@ -581,15 +594,18 @@ module.exports = function(webpackEnv) {
       // <link rel="icon" href="%PUBLIC_URL%/favicon.ico">
       // It will be an empty string unless you specify "homepage"
       // in `package.json`, in which case it will be the pathname of that URL.
+      // 该插件应该与html-webpack-plugin一起使用,<% if ('%NODE_ENV%' === 'development') { %>do something<% } %>
       new InterpolateHtmlPlugin(HtmlWebpackPlugin, env.raw),
       // This gives some necessary context to module not found errors, such as
       // the requesting resource.
+      // 用于展示错误信息的，例如找不到那些包
       new ModuleNotFoundPlugin(paths.appPath),
       // Makes some environment variables available to the JS code, for example:
       // if (process.env.NODE_ENV === 'production') { ... }. See `./env.js`.
       // It is absolutely essential that NODE_ENV is set to production
       // during a production build.
       // Otherwise React will be compiled in the very slow development mode.
+      // 定义全局变量，{ __a__: true } ,我可以在业务代码里面使用 __a__ 这个变量
       new webpack.DefinePlugin(env.stringified),
       // This is necessary to emit hot updates (currently CSS only):
       // 如果是开发环境我们要热模块更新
@@ -603,6 +619,7 @@ module.exports = function(webpackEnv) {
       // to restart the development server for webpack to discover it. This plugin
       // makes the discovery automatic so you don't have to restart.
       // See https://github.com/facebook/create-react-app/issues/186
+      // 这个是一个优化，看英文就应该懂了
       isEnvDevelopment &&
         new WatchMissingNodeModulesPlugin(paths.appNodeModules),
       isEnvProduction &&
@@ -619,6 +636,8 @@ module.exports = function(webpackEnv) {
       //   `index.html`
       // - "entrypoints" key: Array of files which are included in `index.html`,
       //   can be used to reconstruct the HTML if necessary
+      // https://segmentfault.com/a/1190000019395237?utm_source=tag-newest
+      // 用于记载dll文件
       new ManifestPlugin({
         fileName: 'asset-manifest.json',
         publicPath: paths.publicUrlOrPath,
@@ -647,6 +666,8 @@ module.exports = function(webpackEnv) {
       // Generate a service worker script that will precache, and keep up to date,
       // the HTML & assets that are part of the webpack build.
       isEnvProduction &&
+        // WorkboxWebpackPlugin  页面加载成功后断网，再刷新，就不显示这个网站，
+        //  PWA的技术就解决了这个问题：断网后，已加载的模块还是能够显示
         new WorkboxWebpackPlugin.GenerateSW({
           clientsClaim: true,
           exclude: [/\.map$/, /asset-manifest\.json$/],
